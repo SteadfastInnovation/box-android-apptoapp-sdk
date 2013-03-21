@@ -105,6 +105,10 @@ public class BoxFolder extends DAO {
      */
     protected String mPath;
     /**
+     * Represents the path from the root directory to this folder.
+     */
+    protected String mFolderPath;
+    /**
      * A unique identifier of a publicly shared file. This can be used to generate shared page URLs.
      */
     protected String mPublicName;
@@ -132,6 +136,10 @@ public class BoxFolder extends DAO {
      * List of tag ids in the folder.
      */
     protected ArrayList<Long> mTagIds = new ArrayList<Long>();
+    /**
+     * List of web links in the folder.
+     */
+    protected ArrayList<WebLink> mWebLinksInFolder = new ArrayList<WebLink>();
 
     // Setters
 
@@ -283,6 +291,16 @@ public class BoxFolder extends DAO {
      */
     public void setPath(final String pathFromRoot) {
         mPath = pathFromRoot;
+    }
+
+    /**
+     * Set folder path from root.
+     * 
+     * @param pathFromRoot
+     *            path from root
+     */
+    public void setFolderPath(final String pathFromRoot) {
+        mFolderPath = pathFromRoot;
     }
 
     /**
@@ -508,12 +526,21 @@ public class BoxFolder extends DAO {
     }
 
     /**
-     * Get the path from the root to the folder.
+     * Get the path from the root to the folder. In general this method is not useful and returns nothing. Only when using the search api is this populated.
      * 
      * @return path from root
      */
     public String getPath() {
         return mPath;
+    }
+
+    /**
+     * Get the path from the root to the folder.
+     * 
+     * @return path from root
+     */
+    public String getFolderPath() {
+        return mFolderPath;
     }
 
     /**
@@ -580,7 +607,8 @@ public class BoxFolder extends DAO {
     }
 
     /**
-     * Get the folder path ids. NOTE: This currently doesn't return anything.
+     * Get the folder path ids. This will only return values if this BoxFolder was constructed through a getAccountTree() call, and Box.PARAM_SHOW_PATH_IDS is
+     * set.
      * 
      * @return The folder path ids. (e.g. /54325/643563/425)
      */
@@ -598,6 +626,15 @@ public class BoxFolder extends DAO {
     }
 
     /**
+     * Get list of web links in the folder.
+     * 
+     * @return list of files in folder
+     */
+    public List<? extends WebLink> getWebLinksInFolder() {
+        return mWebLinksInFolder;
+    }
+
+    /**
      * Add a child file to this folder. Response parsers always use this method to add child files to the folder rather than directly adding to the list through
      * getFilesInFolder().add(). So if you want to override how the list of child files are populated, you can override this method in your own custom BoxFolder
      * class.
@@ -607,6 +644,33 @@ public class BoxFolder extends DAO {
      */
     public void addChildFile(final BoxFile boxFile) {
         mFilesInFolder.add(boxFile);
+    }
+
+    /**
+     * Add a child web link to this folder. Response parsers always use this method to add child files to the folder rather than directly adding to the list
+     * through getFilesInFolder().add(). So if you want to override how the list of child files are populated, you can override this method in your own custom
+     * BoxFolder class.
+     * 
+     * @param webLink
+     *            The web link to add as a child of this folder.
+     */
+    public void addChildWebLink(final WebLink webLink) {
+        mWebLinksInFolder.add(webLink);
+    }
+
+    /**
+     * 
+     * @param webLinkId
+     *            the web link id to be removed from the folder if a link with such an id exists.
+     */
+    public void removeChildWebLink(final long webLinkId) {
+        for (int i = 0; i < mWebLinksInFolder.size(); i++) {
+            if (mWebLinksInFolder.get(i).getId() == webLinkId) {
+                mWebLinksInFolder.remove(i);
+                return;
+            }
+        }
+
     }
 
     /**
@@ -734,6 +798,9 @@ public class BoxFolder extends DAO {
         }
         else if (key.equals("folder_path_ids")) {
             setFolderPathIds(value);
+        }
+        else if (key.equals("folder_path")) {
+            setFolderPath(value);
         }
         else if (key.equals("description")) {
             setDescription(value);

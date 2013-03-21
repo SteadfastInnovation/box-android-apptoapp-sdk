@@ -39,6 +39,7 @@ import com.box.androidlib.ResponseListeners.GetAuthTokenListener;
 import com.box.androidlib.ResponseListeners.GetCollaborationsListener;
 import com.box.androidlib.ResponseListeners.GetCommentsListener;
 import com.box.androidlib.ResponseListeners.GetFileInfoListener;
+import com.box.androidlib.ResponseListeners.GetItemRolesForItemListener;
 import com.box.androidlib.ResponseListeners.GetTicketListener;
 import com.box.androidlib.ResponseListeners.GetUpdatesListener;
 import com.box.androidlib.ResponseListeners.GetVersionsListener;
@@ -62,6 +63,7 @@ import com.box.androidlib.ResponseParsers.CommentsResponseParser;
 import com.box.androidlib.ResponseParsers.DefaultResponseParser;
 import com.box.androidlib.ResponseParsers.FileResponseParser;
 import com.box.androidlib.ResponseParsers.FolderResponseParser;
+import com.box.androidlib.ResponseParsers.ItemRolesParser;
 import com.box.androidlib.ResponseParsers.PublicShareResponseParser;
 import com.box.androidlib.ResponseParsers.SearchResponseParser;
 import com.box.androidlib.ResponseParsers.TagsResponseParser;
@@ -97,6 +99,10 @@ public class Box {
      */
     public static final String TYPE_FOLDER = "folder";
     /**
+     * Used in a variety of API methods to indicate that the type of object being acted on is a folder.
+     */
+    public static final String TYPE_WEB_LINK = "web_link";
+    /**
      * Used in API methods such as addComment.
      */
     public static final String TYPE_COMMENT = "comment";
@@ -125,6 +131,14 @@ public class Box {
      * Parameter used in getAccountTree to indicate that the server should return the number of comments.
      */
     public static final String PARAM_COMMENT_COUNT = "comment_count";
+    /**
+     * Parameter that can be used in getAccountTree to request that path ids should be returned.
+     */
+    public static final String PARAM_SHOW_PATH_IDS = "show_path_ids";
+    /**
+     * Parameter that can be used in getAccountTree to request that path names should be returned.
+     */
+    public static final String PARAM_SHOW_PATH_NAMES = "show_path_names";
     /**
      * Used in search to set the sort criteria of results to be by relevance.
      */
@@ -1472,6 +1486,49 @@ public class Box {
                         @Override
                         public void run() {
                             listener.onComplete(status);
+                        }
+                    });
+                }
+                catch (final IOException e) {
+                    mHandler.post(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            listener.onIOException(e);
+                        }
+                    });
+                }
+            }
+        }.start();
+    }
+
+    /**
+     * Get the possible roles that can be given to a collaborator when an item is collaborated.
+     * 
+     * @param authToken
+     *            The auth token retrieved through {@link BoxSynchronous#getAuthToken(String)}
+     * @param type
+     *            The type of item to be shared. Set to {@link com.box.androidlib.Box#TYPE_FILE} or {@link com.box.androidlib.Box#TYPE_FOLDER}
+     * @param targetId
+     *            The file_id or folder_id of the item
+     * @return the response parser used to capture the data of interest from the response. See the doc for the specific parser type returned to see what data is
+     *         now available. All parsers implement getStatus() at a minimum.
+     * @param listener
+     *            The callback that will run
+     */
+    public void getItemRolesForItem(final String authToken, final String type, final long targetId, final GetItemRolesForItemListener listener) {
+
+        new Thread() {
+
+            @Override
+            public void run() {
+                try {
+                    final ItemRolesParser parser = BoxSynchronous.getInstance(mApiKey).getItemRolesForItem(authToken, type, targetId);
+                    mHandler.post(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            listener.onComplete(parser.getItemRoles(), parser.getStatus());
                         }
                     });
                 }
